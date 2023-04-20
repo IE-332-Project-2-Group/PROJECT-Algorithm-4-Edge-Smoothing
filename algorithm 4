@@ -1,0 +1,25 @@
+#Andrew Newquist
+
+#Algorithm 4: Edge Smoothing
+#This algorithm changes 1% of the images pixels by identifying edges and smoothing them
+
+#This library introduces smoothing functions
+library(imager)
+setwd("~/Desktop/Project/dandelions")
+#Import Image
+image<- load.image("AdobeStock_206345546-426480574.jpg")
+
+#Define Budget 
+budget_pct<-0.01
+pixel_num<- prod(dim(image))
+budget<- round(budget_pct*pixel_num)
+
+#Smooths edges
+pixel_locations<- sample(pixel_num,budget)
+image_smooth <- image #Make a copy to compare
+image_smooth[pixel_locations]<-smooth(image[pixel_locations])
+
+
+plot(image_smooth)
+
+
