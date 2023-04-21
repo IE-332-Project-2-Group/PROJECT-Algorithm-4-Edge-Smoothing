@@ -8,7 +8,7 @@ library(imager)
 
 #Import Image
 setwd("~/Desktop/Project/dandelions")
-image<- load.image("AdobeStock_206345546-426480574.jpg")
+image<- load.image("common-dandelion-43x_pam3-3575848235.jpg")
 
 #Define Budget 
 budget_pct<-0.01
@@ -33,6 +33,4 @@ image_smooth[pixel_locations]<-smooth(image[pixel_locations])
 
 setwd("~/Desktop/Project/A4altered")
 save.image(image_smooth, "smoothed_image.jpg")
-
-
 
