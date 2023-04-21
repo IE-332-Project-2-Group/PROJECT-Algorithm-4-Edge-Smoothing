@@ -5,21 +5,34 @@
 
 #This library introduces smoothing functions
 library(imager)
-setwd("~/Desktop/Project/dandelions")
+
 #Import Image
+setwd("~/Desktop/Project/dandelions")
 image<- load.image("AdobeStock_206345546-426480574.jpg")
 
 #Define Budget 
 budget_pct<-0.01
 pixel_num<- prod(dim(image))
 budget<- round(budget_pct*pixel_num)
+# Define Block Size
+block_size <- round(sqrt(budget))
+block_half <- round(block_size / 2)
 
-#Smooths edges
-pixel_locations<- sample(pixel_num,budget)
+# Define Block Location
+x <- round(dim(image)[1] / 2) - block_half
+y <- round(dim(image)[2] / 2) - block_half
+
+# Select Block Pixels
+pixel_locations <- expand.grid(x:(x + block_size - 1), y:(y + block_size - 1))
+pixel_locations <- as.vector(apply(pixel_locations, 1, function(x) (x[1] - 1) * dim(image)[2] + x[2]))
+
 image_smooth <- image #Make a copy to compare
 image_smooth[pixel_locations]<-smooth(image[pixel_locations])
 
+#plot(image_smooth)
 
-plot(image_smooth)
+setwd("~/Desktop/Project/A4altered")
+save.image(image_smooth, "smoothed_image.jpg")
+
 
 
