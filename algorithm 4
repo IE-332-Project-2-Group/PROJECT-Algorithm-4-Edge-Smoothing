@@ -1,8 +1,9 @@
 #Andrew Newquist
 
 #Algorithm 4: Edge Smoothing
-#This algorithm changes 1% of the images pixels by identifying edges and smoothing them
+#This algorithm changes 1% of the images pixels by increasing the noise in randomly selected pixels
 #The looping structures are borrowed from Talya Arpaci's Algorithm 1
+#The implementations of algorithm 4 start at line 40 and line 94
 
 library(tidyverse)
 library(keras)
