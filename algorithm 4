@@ -2,35 +2,126 @@
 
 #Algorithm 4: Edge Smoothing
 #This algorithm changes 1% of the images pixels by identifying edges and smoothing them
+#The looping structures are borrowed from Talya Arpaci's Algorithm 1
 
-#This library introduces smoothing functions
-library(imager)
+library(tidyverse)
+library(keras)
+library(tensorflow)
+library(reticulate)
+library(png)
 
-#Import Image
-setwd("~/Desktop/Project/dandelions")
-image<- load.image("common-dandelion-43x_pam3-3575848235.jpg")
+setwd("~/Desktop/Project")
+model_list <- load_model_tf("./dandelion_model/")
+model <- model_list
 
-#Define Budget 
-budget_pct<-0.01
-pixel_num<- prod(dim(image))
-budget<- round(budget_pct*pixel_num)
-# Define Block Size
-block_size <- round(sqrt(budget))
-block_half <- round(block_size / 2)
+#Set target image size
+target_size <- c(224, 224)
 
-# Define Block Location
-x <- round(dim(image)[1] / 2) - block_half
-y <- round(dim(image)[2] / 2) - block_half
+#Create Data Frame
+res <- data.frame(file = character(), class = character(), percent_dandelion = numeric(), percent_dandelions = numeric(), stringsAsFactors = FALSE)
 
-# Select Block Pixels
-pixel_locations <- expand.grid(x:(x + block_size - 1), y:(y + block_size - 1))
-pixel_locations <- as.vector(apply(pixel_locations, 1, function(x) (x[1] - 1) * dim(image)[2] + x[2]))
+f <- list.files("./grass")
+for (i in f) {
+  
+  #Load image as Keras tensor object
+  test_image <- image_load(paste("./grass/", i, sep = ""), target_size = target_size)
+  
+  #Convert Keras tensor object to  array
+  test_array <- image_to_array(test_image)
+  
+  #Assign Budget
+  test_array <- array_reshape(test_array, c(1, dim(test_array)))
+  test_array <- test_array / 255
+  pixel_num <- 224 * 224
+  budget <- round(pixel_num * 0.01)
+  
+  #
+  ##THIS IS WHERE THE UNIQUE ALGORITHM 4 (First implementation) BEGINS_________
+  
+  #Add random noise to the pixel values and their RGB channels
+  for (j in pixel_indices) {
+    row_index <- ceiling(j / 224)
+    col_index <- j %% 224
+    if (col_index == 0){ col_index <- 224}
+    
+    #Alter red channel the least, these images do not have many values in the red channel
+    r_chan <- runif(1, -0.01, 0.01) 
+    test_array[1, row_index, col_index, 1] <- test_array[1, row_index, col_index, 1] + r_chan
+    
+    #Alter green channel is a heavier component of these images
+    g_chan <- runif(1, -0.8, 0.8) 
+    test_array[1, row_index, col_index, 2] <- test_array[1, row_index, col_index, 2] + g_chan
+    
+    #Alter blue channel as it is a heavier component of these images
+    b_chan <- runif(1, -0.8, 0.8) 
+    test_array[1, row_index, col_index, 3] <- test_array[1, row_index, col_index, 3] + b_chan
+  }
+  
+  pred <- model %>% predict(test_array)
+  
+  ##THIS IS WHERE THE UNIQUE ALGORITHM 4 (First implementation) ENDS___________
+  #
+  
+  # Record results in Res
+  if (pred[1,2] < 0.50){
+    res <- rbind(res, data.frame(file = i, class = "not_grass", percent_dandelion = pred[1,1], percent_grass = 1- pred[1,1]))
+  } else {
+    res <- rbind(res, data.frame(file = i, class = "grass", percent_dandelion = pred[1,1], percent_grass = 1 - pred[1,1]))
+  }
+}
 
-image_smooth <- image #Make a copy to compare
-image_smooth[pixel_locations]<-smooth(image[pixel_locations])
 
-#plot(image_smooth)
-
-setwd("~/Desktop/Project/A4altered")
-save.image(image_smooth, "smoothed_image.jpg")
-
+f <- list.files("./dandelions")
+for (i in f) {
+  
+  # Load image as Keras tensor object
+  test_image <- image_load(paste("./dandelions/", i, sep = ""), target_size = target_size)
+  
+  #Convert Keras tensor object to  array
+  test_array <- image_to_array(test_image)
+  
+  #Assign Budget
+  test_array <- array_reshape(test_array, c(1, dim(test_array)))
+  test_array <- test_array / 255
+  pixel_num <- 224 * 224
+  budget <- round(pixel_num * 0.01)
+  
+  #Generate random pixel indices
+  pixel_indices <- sample(pixel_num, budget, replace = FALSE)
+  
+  #
+  ##THIS IS WHERE THE UNIQUE ALGORITHM 4 (Second implementation) BEGINS_________
+  
+  #Add random noise to the pixel values and their RGB channels
+  for (j in pixel_indices) {
+    row_index <- ceiling(j / 224)
+    col_index <- j %% 224
+    if (col_index == 0){ col_index <- 224}
+    
+    #Alter red channel the least, these images do not have many values in the red channel
+    r_chan <- runif(1, -0.01, 0.01) 
+    test_array[1, row_index, col_index, 1] <- test_array[1, row_index, col_index, 1] + r_chan
+    
+    #Alter green channel is a heavier component of these images
+    g_chan <- runif(1, -0.8, 0.8) 
+    test_array[1, row_index, col_index, 2] <- test_array[1, row_index, col_index, 2] + g_chan
+    
+    #Alter blue channel as it is a heavier component of these images
+    b_chan <- runif(1, -0.8, 0.8) 
+    test_array[1, row_index, col_index, 3] <- test_array[1, row_index, col_index, 3] + b_chan
+  }
+  
+  pred <- model %>% predict(test_array)
+  
+  ##THIS IS WHERE THE UNIQUE ALGORITHM 4 (Second implementation) ENDS___________
+  #
+  
+  #Record results in Res
+  if (pred[1,1] < 0.50){
+    res <- rbind(res, data.frame(file = i, class = "not_dandelion", percent_dandelion = pred[1,1], percent_grass = 1 - pred[1,1]))
+  } else {
+    res <- rbind(res, data.frame(file = i, class = "dandelion", percent_dandelion = pred[1,1], percent_grass = 1 - pred[1,1]))
+  }
+}
+print(res)
+View(res)
